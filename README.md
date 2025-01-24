@@ -20,3 +20,6 @@ Sign up for an Open Weather API key [here](https://openweathermap.org)
 
 ## API Setup
 - Create a settings.yaml file in src/ and add the field 'WEATHER_API_KEY: 'YOUR_KEY_HERE'
+
+## Running the app
+```streamlit run src/main.py```
