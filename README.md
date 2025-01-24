@@ -6,7 +6,7 @@ Advanced stock forecasting platform based on meteorological data
 Make sure you're running on python version <b>3.12.6</b> when setting up, as this will ensure full compatibility with the depdendencies listed in here.
 Sign up for an Open Weather API key at [here](https://openweathermap.org)
 
-## Setting up (Linux)
+## Setting up (macOS and Linux)
 1. python -m venv venv
 2. Activate virtual environment via the command: ```source venv/bin/activate```
 3. Install dependencies into your virtual environment: ```pip install -r requirements.txt```
