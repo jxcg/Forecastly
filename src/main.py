@@ -45,7 +45,7 @@ def get_weather(city_name: str) -> dict:
 def main():
     st.title("Forecastly")
     weather_data = get_weather('London')
-    #print(weather_data) -> returns dict of weather data for labelled city
+    print(weather_data) #-> returns dict of weather data for labelled city
        
 
 
