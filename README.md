@@ -19,4 +19,4 @@ Sign up for an Open Weather API key at [here](https://openweathermap.org)
 3. Install the required dependencies: ```pip install -r requirements.txt```
 
 ## API Setup
-- Create a settings.yaml file in src/ and add the field 'weather_api_key: 'YOUR_KEY_HERE'
+- Create a settings.yaml file in src/ and add the field 'WEATHER_API_KEY: 'YOUR_KEY_HERE'
