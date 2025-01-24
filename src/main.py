@@ -1,6 +1,7 @@
 import streamlit as st
 from data_visualizer import DataVisualizer
 
+
 def main():
     st.set_page_config(layout="wide")
 
@@ -44,12 +45,13 @@ def main():
                 disabled=not ticker or not location or not weather_attributes,
                 use_container_width=True,
             )
-    
+
     if submit:
         if action == "Correlate":
             data = DataVisualizer(date_range, ticker, location, weather_attributes)
             fig = data.create_figure()
             st.plotly_chart(fig)
+
 
 if __name__ == "__main__":
     main()

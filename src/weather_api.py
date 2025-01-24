@@ -5,6 +5,7 @@ import random
 # make this file a class like the other files
 # see data visualiser and the stock market one
 
+
 def load_config() -> dict:
     try:
         with open("settings.yaml", "r") as file:
@@ -35,6 +36,7 @@ def get_weather(city_name: str) -> dict:
 
     except Exception as e:
         return {"error": str(e)}
+
 
 def get_weather_score(amount: int) -> list:
     return [random.uniform(0, 100) for _ in range(amount)]

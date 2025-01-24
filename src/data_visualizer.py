@@ -4,8 +4,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+
 class DataVisualizer:
-    def __init__(self, date_range: tuple, ticker: str, location: str, weather_attributes: list):
+    def __init__(
+        self, date_range: tuple, ticker: str, location: str, weather_attributes: list
+    ):
         self.ticker = ticker
         self.security = YFinanceSecurity(ticker)
         self.date_range = date_range
@@ -14,14 +17,18 @@ class DataVisualizer:
 
     def create_figure(self) -> go.Figure:
         data = self.get_chart_data()
-        
+
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(
-            go.Scatter(x=data['date'], y=data['price'], name="Price"),
+            go.Scatter(x=data["date"], y=data["price"], name="Price"),
             secondary_y=False,
         )
         fig.add_trace(
-            go.Scatter(x=data['date'], y=data['aggregrated_weather_score'], name="Aggregated Weather Score"),
+            go.Scatter(
+                x=data["date"],
+                y=data["aggregrated_weather_score"],
+                name="Aggregated Weather Score",
+            ),
             secondary_y=True,
         )
 
@@ -37,14 +44,17 @@ class DataVisualizer:
 
     def get_chart_data(self) -> pd.DataFrame:
         pricing = self.security.get_historical_data(self.date_range)
-        weather_scores = get_weather_score(len(pricing.index)) # Joshua come in and do this properly
+        weather_scores = get_weather_score(
+            len(pricing.index)
+        )  # Joshua come in and do this properly
 
-        return pd.DataFrame({
-            'date': pricing.index,
-            'price': pricing["Close"].tolist(),
-            'aggregrated_weather_score': weather_scores 
-        })
-    
+        return pd.DataFrame(
+            {
+                "date": pricing.index,
+                "price": pricing["Close"].tolist(),
+                "aggregrated_weather_score": weather_scores,
+            }
+        )
+
     def get_title(self) -> str:
         return f"{self.security.get_name()} against {", ".join(self.weather_attributes)} in {self.location} from {self.date_range[0]} to {self.date_range[1]}"
-
