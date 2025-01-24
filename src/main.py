@@ -4,7 +4,7 @@ import yaml
 
 def load_config() -> dict:
     try:
-        with open ('config.yaml', 'r') as f:
+        with open ('settings.yaml', 'r') as f:
             config = yaml.safe_load(f)
         print(type(config))
         return config
