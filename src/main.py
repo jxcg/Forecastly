@@ -1,53 +1,55 @@
 import streamlit as st
-import requests
-import yaml
-
-def load_config() -> dict:
-    try:
-        with open ('settings.yaml', 'r') as f:
-            config = yaml.safe_load(f)
-        print(type(config))
-        return config
-    except FileNotFoundError as e:
-        st.error("Config file not found, ensure config.yaml file is present at src/config.yaml")
-        return None
-
-
-
-# feel free to move around
-config = load_config()
-weather_api_key = config.get('weather_api_key')
-base_weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat=44.34&lon=10.99&appid={weather_api_key}"
-
-
-
-def get_weather(city_name: str) -> dict:
-    
-    """
-    Fetch weather from OpenWeather API 
-    """
-
-    params = {
-        'q': city_name,
-        'appid':weather_api_key,
-        'units':'metric'
-    }
-    try:
-        response = requests.get(base_weather_url, params=params)
-        return response.json()
-
-    except Exception as e:
-        st.error(f"Error while fetching weather data: {e}")
-        return None
-
-
+from data_visualizer import DataVisualizer
 
 def main():
-    st.title("Forecastly")
-    weather_data = get_weather('London')
-    print(weather_data) #-> returns dict of weather data for labelled city
-       
+    st.set_page_config(layout="wide")
 
+    st.title("Forecastly")
+
+    # TODO: Column sizing is dodgy in different screen sizes
+    col1, col2, col3, col4, col5, col6 = st.columns(
+        [1, 1, 2, 1, 1.2, 1], vertical_alignment="bottom"
+    )
+    with col1:
+        ticker = st.text_input("Ticker", placeholder="MS", value="MS")
+    with col2:
+        location = st.text_input("City", placeholder="New York", value="New York")
+    with col3:
+        weather_attributes = st.multiselect(
+            "Weather Attributes",
+            ["Temperature", "Humidity", "Precipitation", "Wind Speed", "UV Light"],
+            default=["Temperature"],
+        )
+    with col4:
+        action = st.segmented_control(
+            "Action", ["Correlate", "Forecast"], default="Correlate"
+        )
+    with col5:
+        if action == "Correlate":
+            date_range = st.date_input(
+                "Date Range", value=[], format="DD/MM/YYYY", max_value="today"
+            )
+            with col6:
+                submit = st.button(
+                    "Submit",
+                    disabled=not ticker
+                    or not location
+                    or not weather_attributes
+                    or not date_range,
+                    use_container_width=True,
+                )
+        else:
+            submit = st.button(
+                "Submit",
+                disabled=not ticker or not location or not weather_attributes,
+                use_container_width=True,
+            )
+    
+    if submit:
+        if action == "Correlate":
+            data = DataVisualizer(date_range, ticker, location, weather_attributes)
+            fig = data.create_figure()
+            st.plotly_chart(fig)
 
 if __name__ == "__main__":
     main()
