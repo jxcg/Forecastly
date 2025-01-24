@@ -12,7 +12,6 @@ Sign up for an Open Weather API key at [here](https://openweathermap.org)
 3. Install dependencies into your virtual environment: ```pip install -r requirements.txt```
 4. Sign up for an Open Weather API key at [here](https://openweathermap.org)
 
-
 ## Setting up (Windows)
 1. python -m venv venv
 2. Activate the virtual environment: ```venv\Scripts\activate```
