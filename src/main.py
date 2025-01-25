@@ -1,8 +1,10 @@
 import streamlit as st
-from data_visualizer import DataVisualizer
+from data_visualiser import DataVisualiser
+from constants import WEATHER_ATTRIBUTES
 
 
 def main():
+    """Main function for the Streamlit app"""
     st.set_page_config(layout="wide")
 
     st.title("Forecastly")
@@ -12,14 +14,13 @@ def main():
         [1, 1, 2, 1, 1.2, 1], vertical_alignment="bottom"
     )
     with col1:
-        ticker = st.text_input("Ticker", placeholder="MS", value="MS")
+        ticker = st.text_input("Ticker", placeholder="MS")
     with col2:
-        location = st.text_input("City", placeholder="New York", value="New York")
+        location = st.text_input("City", placeholder="New York")
     with col3:
         weather_attributes = st.multiselect(
             "Weather Attributes",
-            ["Temperature", "Humidity", "Precipitation", "Wind Speed", "UV Light"],
-            default=["Temperature"],
+            WEATHER_ATTRIBUTES,
         )
     with col4:
         action = st.segmented_control(
@@ -48,7 +49,7 @@ def main():
 
     if submit:
         if action == "Correlate":
-            data = DataVisualizer(date_range, ticker, location, weather_attributes)
+            data = DataVisualiser(date_range, ticker, location, weather_attributes)
             fig = data.create_figure()
             st.plotly_chart(fig)
 

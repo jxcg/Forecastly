@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-class DataVisualizer:
+class DataVisualiser:
     def __init__(
         self, date_range: tuple, ticker: str, location: str, weather_attributes: list
     ):
@@ -16,6 +16,7 @@ class DataVisualizer:
         self.weather_attributes = weather_attributes
 
     def create_figure(self) -> go.Figure:
+        """Return the figure object for the correlation plotly chart"""
         data = self.get_chart_data()
 
         fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -43,6 +44,7 @@ class DataVisualizer:
         return fig
 
     def get_chart_data(self) -> pd.DataFrame:
+        """Return a df for the chart data"""
         pricing = self.security.get_historical_data(self.date_range)
         weather_scores = get_weather_score(
             len(pricing.index)
@@ -57,4 +59,5 @@ class DataVisualizer:
         )
 
     def get_title(self) -> str:
-        return f"{self.security.get_name()} against {", ".join(self.weather_attributes)} in {self.location} from {self.date_range[0]} to {self.date_range[1]}"
+        """Return the title for the chart"""
+        return f"{self.security.get_name()} against {", ".join(self.weather_attributes)} in {self.location} from {self.date_range[0].strftime("%d/%m/%Y")} to {self.date_range[1].strftime("%d/%m/%Y")}"
