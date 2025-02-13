@@ -1,3 +1,5 @@
+"""Globaly accessible constants"""
+
 WEATHER_ATTRIBUTES = [
     "Temperature",
     "Humidity",
