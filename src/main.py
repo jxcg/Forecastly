@@ -1,3 +1,4 @@
+"""Central streamlit file for Forecastly"""
 import streamlit as st
 from data_visualiser import DataVisualiser
 from constants import WEATHER_ATTRIBUTES
