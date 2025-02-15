@@ -1,9 +1,11 @@
 """Wrapper file for querying yfinance"""
+
 import yfinance as yf
 
 
 class YFinanceSecurity:
     """Wrapper for each security"""
+
     def __init__(self, ticker: str):
         self.ticker = ticker
         self.security = yf.Ticker(ticker)
