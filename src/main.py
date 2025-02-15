@@ -1,4 +1,5 @@
 """Central streamlit file for Forecastly"""
+
 import streamlit as st
 from data_visualiser import DataVisualiser
 from constants import WEATHER_ATTRIBUTES
@@ -51,8 +52,11 @@ def main():
     if submit:
         if action == "Correlate":
             data = DataVisualiser(date_range, ticker, location, weather_attributes)
-            fig = data.create_figure()
-            st.plotly_chart(fig)
+            try:
+                fig = data.create_figure()
+                st.plotly_chart(fig)
+            except ValueError as e:
+                st.error(e)
 
 
 if __name__ == "__main__":

@@ -1,51 +1,75 @@
-import yaml
-import requests
-import random
+"""Wrapper file for querying weather data from meteostat"""
 
-# make this file a class like the other files
-# see data visualiser and the stock market one
-
-
-def load_config() -> dict:
-    try:
-        with open("settings.yaml", "r") as file:
-            config = yaml.safe_load(file)
-        return config
-    except FileNotFoundError:
-        return {}
+from geopy.geocoders import Nominatim
+from meteostat import Daily, Stations
+from sklearn.preprocessing import RobustScaler, MinMaxScaler
+import pandas as pd
 
 
-def get_api_key() -> str:
-    config = load_config()
-    return config.get("WEATHER_API_KEY", "")
+class WeatherAPI:
+    """Wrapper for fetching weather data"""
 
+    def __init__(self):
+        self.robust_scaler = RobustScaler()
+        self.minmax_scaler = MinMaxScaler()
 
-weather_api_key = get_api_key()
-base_weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat=44.34&lon=10.99&appid={weather_api_key}"
+    def get_processed_weather_data(self, city_name, dates, attrs):
+        """Returns relevant weather data per city time range and attributes"""
+        try:
+            weather_df = self.__get_weather(city_name, dates[0], dates[-1])
+        except ValueError as e:
+            raise ValueError(e) from e
 
+        filtered_df = self.__filter_data(weather_df, dates, attrs)
+        normalised_df = self.__normalise_data(filtered_df, attrs)
+        normalised_df["score"] = normalised_df[
+            [attr + "_minmax" for attr in attrs]
+        ].mean(axis=1)
+        return normalised_df
 
-def get_weather(city_name: str) -> dict:
-    """
-    Fetch weather from OpenWeather API
-    """
+    def __normalise_data(self, df, attrs):
+        robust_array = self.robust_scaler.fit_transform(df)
+        robust_df = pd.DataFrame(
+            robust_array,
+            columns=[attr + "_robust" for attr in attrs],
+            index=df.index,
+        )
+        scaled_df = pd.concat([df, robust_df], axis=1)
 
-    params = {"q": city_name, "appid": weather_api_key, "units": "metric"}
-    try:
-        response = requests.get(base_weather_url, params=params)
-        return response.json()
+        minmax_array = self.minmax_scaler.fit_transform(robust_df)
+        minmax_df = pd.DataFrame(
+            minmax_array,
+            columns=[attr + "_minmax" for attr in attrs],
+            index=df.index,
+        )
+        normalised_df = pd.concat([scaled_df, minmax_df], axis=1)
+        return normalised_df
 
-    except Exception as e:
-        return {"error": str(e)}
+    def __filter_data(self, data, dates, attrs):
+        cleaned_df = data.fillna(0)
+        filtered_df = cleaned_df.loc[data.index.strftime("%Y-%m-%d").isin(dates)]
+        filtered_df = filtered_df[attrs]
+        return filtered_df
 
+    def __get_weather(self, city_name, start_date, end_date):
+        """Returns the raw weather data from meteostat"""
+        coords = self.__get_city_coordinates(city_name)
+        if not coords:
+            raise ValueError(f"Could not get coordinates for {city_name}.")
 
-def get_weather_score(amount: int) -> list:
-    return [random.uniform(0, 100) for _ in range(amount)]
-    # Make this function work properly please
-    # It needs to return a list of numbers
-    # It should take in a list of weather attributes. eg [temp, uv]
-    # get 1 data point for that day each. eg [25C and 12UV]
-    # aggregate that into 1 score for the day (make a new func for this) (i recomend it fits the data to some standard (i say between 0 and 1)
-    # do this for every day in the date range
-    # get this aggregated into a list and return
-    # if u did it properly the code should still run
-    # ping me (junaid) if u disagree/need help/have questions
+        station = Stations().nearby(coords[0], coords[1]).fetch(1)
+        if station.empty:
+            raise ValueError(f"No station found near {city_name}.")
+
+        station_id = station.index[0]
+        data = Daily(station_id, start_date, end_date).fetch()
+        return data
+
+    def __get_city_coordinates(self, city_name) -> list:
+        """Returns the coordinates for a city name"""
+        geolocator = Nominatim(user_agent="weather_app")
+        location = geolocator.geocode(city_name)
+        if location:
+            return [location.latitude, location.longitude]
+        else:
+            return None
