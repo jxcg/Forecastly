@@ -70,7 +70,6 @@ class DataVisualiser:
         pricing = pricing.loc[pricing.index.isin(weather_data_dates)]
 
         weather_scores = weather_data["score"].tolist()
-        print(weather_scores)
 
         return pd.DataFrame(
             {
