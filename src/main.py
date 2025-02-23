@@ -1,5 +1,6 @@
 """Central streamlit file for Forecastly"""
 
+import datetime
 import streamlit as st
 from data_visualiser import DataVisualiser
 from constants import WEATHER_ATTRIBUTES
@@ -32,7 +33,11 @@ def main():
     with col5:
         if action == "Correlate":
             date_range = st.date_input(
-                "Date Range", value=[], format="DD/MM/YYYY", max_value="today"
+                "Date Range",
+                value=[],
+                format="DD/MM/YYYY",
+                max_value="today",
+                min_value=datetime.date(1979, 1, 1),
             )
             with col6:
                 submit = st.button(
