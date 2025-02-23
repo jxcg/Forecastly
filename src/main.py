@@ -1,5 +1,6 @@
 """Central streamlit file for Forecastly"""
 
+import datetime
 import streamlit as st
 from data_visualiser import DataVisualiser
 from constants import WEATHER_ATTRIBUTES
@@ -7,7 +8,8 @@ from constants import WEATHER_ATTRIBUTES
 
 def main():
     """Main function for the Streamlit app"""
-    st.set_page_config(layout="wide")
+    st.set_page_config(layout="wide", page_title="Forecastly", page_icon="📊")
+    st.html("<style>[data-testid='stHeaderActionElements'] {display: none;}</style>")
 
     st.title("Forecastly")
 
@@ -31,7 +33,11 @@ def main():
     with col5:
         if action == "Correlate":
             date_range = st.date_input(
-                "Date Range", value=[], format="DD/MM/YYYY", max_value="today"
+                "Date Range",
+                value=[],
+                format="DD/MM/YYYY",
+                max_value="today",
+                min_value=datetime.date(1979, 1, 1),
             )
             with col6:
                 submit = st.button(
@@ -49,14 +55,39 @@ def main():
                 use_container_width=True,
             )
 
+    st.divider()
+
     if submit:
         if action == "Correlate":
-            data = DataVisualiser(date_range, ticker, location, weather_attributes)
             try:
+                data = DataVisualiser(date_range, ticker, location, weather_attributes)
                 fig = data.create_figure()
-                st.plotly_chart(fig)
+
             except ValueError as e:
                 st.error(e)
+
+            else:
+                graph_col, cor_col = st.columns(
+                    [3.5, 1], border=True, vertical_alignment="center"
+                )
+
+                with graph_col:
+                    st.plotly_chart(fig)
+
+                with cor_col:
+                    title, message = data.get_correlation()
+                    st.markdown(
+                        f"""
+                        <style>
+                            h3 a.anchor-link {{
+                                display: none !important;
+                            }}
+                        </style>
+                        <h3 style='text-align: center;'>{title}</h3>
+                        <p style='text-align: center;'>{message}</p>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
 
 if __name__ == "__main__":

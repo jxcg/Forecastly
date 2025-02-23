@@ -15,12 +15,10 @@ class WeatherAPI:
 
     def get_processed_weather_data(self, city_name, dates, attrs):
         """Returns relevant weather data per city time range and attributes"""
-        try:
-            weather_df = self.__get_weather(city_name, dates[0], dates[-1])
-        except ValueError as e:
-            raise ValueError(e) from e
-
+        dates = [date.strftime("%Y-%m-%d") for date in dates]
+        weather_df = self.__get_weather(city_name, dates[0], dates[-1])
         filtered_df = self.__filter_data(weather_df, dates, attrs)
+        attrs = filtered_df.columns.tolist()
         normalised_df = self.__normalise_data(filtered_df, attrs)
         normalised_df["score"] = normalised_df[
             [attr + "_minmax" for attr in attrs]
@@ -46,20 +44,21 @@ class WeatherAPI:
         return normalised_df
 
     def __filter_data(self, data, dates, attrs):
-        cleaned_df = data.fillna(0)
-        filtered_df = cleaned_df.loc[data.index.strftime("%Y-%m-%d").isin(dates)]
+        filtered_df = data.loc[data.index.strftime("%Y-%m-%d").isin(dates)]
         filtered_df = filtered_df[attrs]
-        return filtered_df
+        filtered_df.dropna(thresh=len(filtered_df) * 0.5, axis=1, inplace=True)
+        cleaned_df = filtered_df.fillna(0)
+        return cleaned_df
 
     def __get_weather(self, city_name, start_date, end_date):
         """Returns the raw weather data from meteostat"""
         coords = self.__get_city_coordinates(city_name)
-        if not coords:
-            raise ValueError(f"Could not get coordinates for {city_name}.")
-
-        station = Stations().nearby(coords[0], coords[1]).fetch(1)
+        stations = Stations().nearby(coords[0], coords[1], radius=50000).fetch()
+        station = stations.loc[stations["daily_start"] < start_date].head(1)
         if station.empty:
-            raise ValueError(f"No station found near {city_name}.")
+            station = stations.sort_values(by="daily_start", ascending=True).iloc[[0]]
+            if station.empty:
+                raise ValueError(f"meteostat: No station found near '{city_name}'.")
 
         station_id = station.index[0]
         data = Daily(station_id, start_date, end_date).fetch()
@@ -71,5 +70,4 @@ class WeatherAPI:
         location = geolocator.geocode(city_name)
         if location:
             return [location.latitude, location.longitude]
-        else:
-            return None
+        raise ValueError(f"Nominatim: Could not get coordinates for '{city_name}'.")
