@@ -1,5 +1,6 @@
 """Wrapper file for querying yfinance"""
 
+from datetime import timedelta
 import yfinance as yf
 
 
@@ -12,10 +13,12 @@ class YFinanceSecurity:
 
     def get_historical_data(self, date_range) -> dict:
         """Return the historical data for the security"""
-        history = self.security.history(start=date_range[0], end=date_range[1])
+        history = self.security.history(
+            start=date_range[0], end=date_range[1] + timedelta(days=1)
+        )
         if not history.empty:
             return history
-        return {"error": "No data found"}
+        raise ValueError(f"yfinance: No data found for '{self.ticker}'")
 
     def get_name(self) -> str:
         """Return the name of the security"""
