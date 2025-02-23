@@ -33,7 +33,7 @@ class DataVisualiser:
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(
             go.Scatter(x=data["date"], y=data["price"], name="Price"),
-            secondary_y=False,
+            secondary_y=True,
         )
         fig.add_trace(
             go.Scatter(
@@ -41,7 +41,7 @@ class DataVisualiser:
                 y=data["aggregrated_weather_score"],
                 name="Aggregated Weather Score",
             ),
-            secondary_y=True,
+            secondary_y=False,
         )
 
         fig.update_layout(
@@ -49,32 +49,40 @@ class DataVisualiser:
         )
 
         fig.update_xaxes(title_text="Date")
-        fig.update_yaxes(title_text="Price", secondary_y=False)
-        fig.update_yaxes(title_text="Weather Score", secondary_y=True, range=[0, 1])
+        fig.update_yaxes(title_text="Price", secondary_y=True)
+        fig.update_yaxes(title_text="Weather Score", secondary_y=False, range=[0, 1])
 
         return fig
 
     def get_chart_data(self) -> pd.DataFrame:
         """Return a df for the chart data"""
         pricing = self.security.get_historical_data(self.date_range)
-        pricing.index = pricing.index.strftime("%Y-%m-%d")
         pricing_data_dates = pricing.index.tolist()
 
         weather_attrs = [WEATHER_ATTRIBUTES[key] for key in self.weather_attributes]
         weather_data = self.weather_api.get_processed_weather_data(
             self.location, pricing_data_dates, weather_attrs
         )
+        self.weather_attributes = [
+            key
+            for key, value in WEATHER_ATTRIBUTES.items()
+            if value in weather_data.columns.tolist()
+        ]
 
         weather_data_dates = weather_data.index.strftime("%Y-%m-%d").tolist()
-        pricing = pricing.loc[pricing.index.isin(weather_data_dates)]
+        pricing = pricing.loc[
+            pricing.index.strftime("%Y-%m-%d").isin(weather_data_dates)
+        ]
 
-        weather_scores = weather_data["score"].tolist()
+        granularity = self.__calculate_granularity(pricing.index[0], pricing.index[-1])
+        pricing = pricing.iloc[::granularity]
+        weather_data = weather_data.iloc[::granularity]
 
         return pd.DataFrame(
             {
-                "date": pricing.index,
+                "date": pricing.index.strftime("%Y-%m-%d"),
                 "price": pricing["Close"].tolist(),
-                "aggregrated_weather_score": weather_scores,
+                "aggregrated_weather_score": weather_data["score"].tolist(),
             }
         )
 
@@ -111,3 +119,13 @@ class DataVisualiser:
             correlation = "strong negative correlation"
 
         return correlation
+
+    def __calculate_granularity(self, start_date, end_date):
+        """Return the what granularity to use between two dates"""
+        delta = (end_date - start_date).days
+
+        if delta <= 365:
+            return 1
+        if delta <= 3650:
+            return 5
+        return 20
