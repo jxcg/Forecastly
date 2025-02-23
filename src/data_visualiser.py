@@ -1,5 +1,6 @@
 """File handling class responsibile for data visualisation"""
 
+from typing import Tuple
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -16,18 +17,19 @@ class DataVisualiser:
     ):
         self.ticker = ticker
         self.security = YFinanceSecurity(ticker)
-        self.date_range = date_range
         self.location = location
         self.weather_attributes = weather_attributes
         self.weather_api = WeatherAPI()
 
+        if date_range[0] == date_range[1]:
+            raise ValueError("Date range must be at least 1 day")
+        self.date_range = date_range
+
     def create_figure(self) -> go.Figure:
         """Return the figure object for the correlation plotly chart"""
-        try:
-            data = self.get_chart_data()
-        except ValueError as e:
-            raise ValueError(e) from e
-
+        data = self.get_chart_data()
+        start_date = data["date"].iloc[0]
+        end_date = data["date"].iloc[-1]
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(
             go.Scatter(x=data["date"], y=data["price"], name="Price"),
@@ -43,7 +45,7 @@ class DataVisualiser:
         )
 
         fig.update_layout(
-            title_text=self.get_title(),
+            title_text=self.get_title(start_date, end_date),
         )
 
         fig.update_xaxes(title_text="Date")
@@ -56,15 +58,12 @@ class DataVisualiser:
         """Return a df for the chart data"""
         pricing = self.security.get_historical_data(self.date_range)
         pricing.index = pricing.index.strftime("%Y-%m-%d")
-
         pricing_data_dates = pricing.index.tolist()
+
         weather_attrs = [WEATHER_ATTRIBUTES[key] for key in self.weather_attributes]
-        try:
-            weather_data = self.weather_api.get_processed_weather_data(
-                self.location, pricing_data_dates, weather_attrs
-            )
-        except ValueError as e:
-            raise ValueError(e) from e
+        weather_data = self.weather_api.get_processed_weather_data(
+            self.location, pricing_data_dates, weather_attrs
+        )
 
         weather_data_dates = weather_data.index.strftime("%Y-%m-%d").tolist()
         pricing = pricing.loc[pricing.index.isin(weather_data_dates)]
@@ -79,8 +78,36 @@ class DataVisualiser:
             }
         )
 
-    def get_title(self) -> str:
+    def get_correlation(self) -> Tuple[str, str]:
+        """Return the correlation between the price and the weather score"""
+        data = self.get_chart_data()
+        correlation = data["price"].corr(data["aggregrated_weather_score"])
+        interpretation = self.__interpret_correlation(correlation)
+        message = f"Pearson Correlation Coefficient of {round(correlation,2)}."
+        return interpretation.title(), message
+
+    def get_title(self, start_date, end_date) -> str:
         """Return the title for the chart"""
-        formatted_start_date = self.date_range[0].strftime("%d/%m/%Y")
-        formatted_end_date = self.date_range[1].strftime("%d/%m/%Y")
-        return f"{self.security.get_name()} against {", ".join(self.weather_attributes)} in {self.location} from {formatted_start_date} to {formatted_end_date}"
+        return (
+            f"{self.security.get_name()} against {', '.join(self.weather_attributes)}"
+            f" in {self.location.title()} from {start_date} to {end_date}"
+        )
+
+    def __interpret_correlation(self, value):
+        """Return the interpretation of the correlation value"""
+        if value > 0.5:
+            correlation = "strong positive correlation"
+        elif 0.3 < value <= 0.5:
+            correlation = "moderate positive correlation"
+        elif 0.1 < value <= 0.3:
+            correlation = "weak positive correlation"
+        elif -0.1 <= value < 0.1:
+            correlation = "no correlation"
+        elif -0.3 <= value < -0.1:
+            correlation = "weak negative correlation"
+        elif -0.5 <= value < -0.3:
+            correlation = "moderate negative correlation"
+        else:
+            correlation = "strong negative correlation"
+
+        return correlation
